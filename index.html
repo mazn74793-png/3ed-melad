@@ -1,18 +1,138 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Birthday Surprise</title>
   <style>
-    html,body{margin:0;height:100%;background:#070913;overflow:hidden}
-    canvas{display:block;width:100vw;height:100vh}
+    :root{
+      --bg: #070812;
+      --fg: #e9eefc;
+      --muted: rgba(233,238,252,.72);
+      --dim: rgba(233,238,252,.18);
+      --accent: #7c8cff; /* لمسة لون واحدة هادية */
+    }
+
+    html,body{height:100%; margin:0; background:var(--bg); overflow:hidden;}
+    body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
+
+    /* خلفية ناعمة (بدون فلاش) */
+    .bg{
+      position:fixed; inset:0;
+      background:
+        radial-gradient(1200px 900px at 20% 20%, rgba(124,140,255,.14), transparent 60%),
+        radial-gradient(1000px 700px at 80% 70%, rgba(124,140,255,.10), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.03), transparent 20%, transparent 80%, rgba(255,255,255,.02));
+      filter: saturate(1.05);
+    }
+    /* Grain خفيف جدًا عشان الإحساس السينمائي */
+    .grain{
+      position:fixed; inset:-20%;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.08'/%3E%3C/svg%3E");
+      opacity:.16;
+      mix-blend-mode: overlay;
+      animation: drift 10s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes drift{to{transform:translate3d(-6%, -4%, 0)}}
+
+    .wrap{
+      position:fixed; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+    }
+
+    .card{
+      width:min(920px, 92vw);
+      text-align:center;
+    }
+
+    .topline{
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      color:var(--muted);
+      letter-spacing:.32em;
+      text-transform:uppercase;
+      font-size:12px;
+      margin-bottom:18px;
+      opacity:.95;
+    }
+    .dot{width:5px; height:5px; border-radius:50%; background:var(--accent); box-shadow:0 0 18px rgba(124,140,255,.7);}
+
+    .big{
+      color:var(--fg);
+      font-weight:900;
+      letter-spacing:-0.04em;
+      line-height:1.02;
+      font-size: clamp(34px, 6vw, 72px);
+      margin: 0;
+      text-shadow: 0 10px 40px rgba(0,0,0,.55);
+    }
+
+    .mid{
+      color:var(--muted);
+      font-weight:700;
+      letter-spacing:-0.02em;
+      font-size: clamp(16px, 2.6vw, 22px);
+      margin: 14px 0 0;
+    }
+
+    .sub{
+      margin-top:18px;
+      color: var(--dim);
+      font-size:14px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+
+    /* Countdown style */
+    .count{
+      font-variant-numeric: tabular-nums;
+      letter-spacing:-0.02em;
+      font-size: clamp(72px, 14vw, 160px);
+      font-weight:950;
+      color:var(--fg);
+      text-shadow: 0 18px 60px rgba(124,140,255,.18), 0 10px 40px rgba(0,0,0,.6);
+    }
+
+    /* Animations (هادية) */
+    .fadeInUp{
+      animation: fadeInUp .65s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @keyframes fadeInUp{
+      from{opacity:0; transform:translate3d(0,14px,0) scale(.985)}
+      to{opacity:1; transform:translate3d(0,0,0) scale(1)}
+    }
+
+    .fadeOut{
+      animation: fadeOut .45s ease both;
+    }
+    @keyframes fadeOut{to{opacity:0; transform:translate3d(0,-10px,0) scale(.99)}}
+
+    .pulseAccent{
+      display:inline-block;
+      position:relative;
+    }
+    .pulseAccent::after{
+      content:"";
+      position:absolute; left:50%; top:50%;
+      width:10px; height:10px; border-radius:999px;
+      transform:translate(-50%,-50%);
+      background:rgba(124,140,255,.55);
+      filter: blur(8px);
+      opacity:.7;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{transform:translate(-50%,-50%) scale(1); opacity:.45}
+      50%{transform:translate(-50%,-50%) scale(1.55); opacity:.75}
+    }
+
     .ui{
       position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
       display:flex; gap:10px; align-items:center;
-      font-family:system-ui, Arial; color:#e5e7eb; font-size:14px;
       padding:10px 12px; border-radius:999px;
-      background:rgba(0,0,0,.30); border:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.10);
+      color:var(--muted); font-size:14px;
       backdrop-filter: blur(10px);
       user-select:none;
     }
@@ -20,349 +140,144 @@
       cursor:pointer; padding:8px 12px; border-radius:999px;
       border:1px solid rgba(255,255,255,.14);
       background:rgba(255,255,255,.06);
-      color:#fff;
+      color:var(--fg);
     }
-    .tag{opacity:.85}
+    .btn:active{transform:scale(.98)}
+
+    /* Reduced motion احترامًا للناس اللي بتحس بدوخة */
+    @media (prefers-reduced-motion: reduce){
+      .grain, .fadeInUp, .fadeOut, .pulseAccent::after{animation:none !important}
+    }
   </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+  <div class="bg"></div>
+  <div class="grain"></div>
 
-<div class="ui">
-  <button class="btn" id="replay">Replay ✨</button>
-  <span class="tag">Tap for fireworks 🎆</span>
-</div>
+  <div class="wrap">
+    <div class="card" id="stage"></div>
+  </div>
+
+  <div class="ui">
+    <button class="btn" id="replay">Replay ✨</button>
+    <span>Tap anywhere to continue ▸</span>
+  </div>
 
 <script>
 (() => {
-  const canvas = document.getElementById("c");
-  const ctx = canvas.getContext("2d", { alpha:false });
+  const stage = document.getElementById("stage");
+  const replayBtn = document.getElementById("replay");
 
-  // =========================
-  //  SOFT / CLEAN SETTINGS
-  // =========================
-  const PIXEL = 10;          // ✅ أكبر = Pixel شكلها أشيك وأريح
-  const RADIUS = 3;          // ✅ تدوير خفيف للمربعات
-  const FADE_IN = 0.11;      // ظهور ناعم
-  const FADE_OUT = 0.13;     // اختفاء ناعم
-  const BG = "#070913";
+  // ✅ عدّل الاسم هنا لو حبيت
+  const NAME = "MAZEN";
 
-  // لون واحد هادي (blue-purple) بدل ألوان عشوائية مؤذية
-  const COLOR_CORE = [170, 190, 255];   // core
-  const COLOR_GLOW = [95, 120, 255];    // glow (خفيف)
+  // Timeline: (#1) Cinematic text + (#5) Countdown + (#3) Silence → Drop
+  // كل مشهد: type + مدة + نصوص
+  const scenes = [
+    { type:"text", ms:1200, top:"PRIVATE LINK", big:"WAIT.", mid:"Don’t blink." },
 
-  // ✅ مفيش ألعاب نارية عشوائية في الخلفية
-  // fireworks تحصل فقط عند بداية بعض السلايدز أو عند الضغط
+    { type:"text", ms:1600, top:"NOT A NORMAL BIRTHDAY", big:"THIS IS NOT A NORMAL BIRTHDAY.", mid:"Keep watching." },
 
-  // =========================
-  //  SCRIPT (مراحل المفاجأة)
-  // =========================
-  const SEQ = [
-    { text:"WAIT FOR IT...",                 ms:1600, boom:false, big:false },
-    { text:"HAPPY 17TH BIRTHDAY",            ms:1800, boom:true,  big:false },
-    { text:"MAZEN",                          ms:2200, boom:false, big:true  },
-    { text:"17 YEARS OF ENERGY ⚡",          ms:1400, boom:true,  big:false },
-    { text:"DREAMS 🚀  LOUD LAUGHS 😎",       ms:1500, boom:false, big:false },
-    { text:"YOU'RE GETTING STRONGER",        ms:1500, boom:true,  big:false },
-    { text:"NO LIMITS",                      ms:1400, boom:true,  big:true  },
-    { text:"THE LEGEND STARTS NOW",          ms:2400, boom:true,  big:true  },
+    { type:"count", ms:850,  value:"3" },
+    { type:"count", ms:850,  value:"2" },
+    { type:"count", ms:850,  value:"1" },
+
+    // Silence (سكون) — مفاجأة نفسية (#3)
+    { type:"silence", ms:650 },
+
+    // Drop
+    { type:"text", ms:1700, top:"TODAY", big:`${NAME}`, mid:"TURNS 17." },
+
+    { type:"text", ms:1500, top:"LEVEL UP", big:"NO NOISE.", mid:"NO FILTERS." },
+    { type:"text", ms:1600, top:"JUST", big:"POWER.", mid:"Built different." },
+
+    { type:"text", ms:1700, top:"THIS YEAR", big:"BIGGER MOVES.", mid:"Higher goals." },
+    { type:"text", ms:1600, top:"MODE", big:"NO LIMITS.", mid:"No excuses." },
+
+    { type:"text", ms:2400, top:"FINAL", big:"THE STORY STARTS NOW.", mid:"Happy 17th Birthday." },
   ];
 
-  // ===== STATE =====
-  let W,H,cols,rows,dpr;
-  let target=[], intensity=[], noise=[];
+  let timer = null;
+  let idx = 0;
 
-  let startTime = performance.now();
-  let lastIdx = -999;
-
-  // fireworks particles
-  const rockets = [];
-  const sparks = [];
-  const confetti = [];
-
-  const rand = (a,b)=>a+Math.random()*(b-a);
-
-  function roundedRect(x,y,w,h,r){
-    const rr = Math.min(r, w/2, h/2);
-    ctx.beginPath();
-    ctx.moveTo(x+rr,y);
-    ctx.arcTo(x+w,y, x+w,y+h, rr);
-    ctx.arcTo(x+w,y+h, x,y+h, rr);
-    ctx.arcTo(x,y+h, x,y, rr);
-    ctx.arcTo(x,y, x+w,y, rr);
-    ctx.closePath();
+  function clearStage(animOut=false){
+    if(!stage.firstChild) return;
+    if(animOut){
+      stage.firstChild.classList.add("fadeOut");
+      setTimeout(()=>{ stage.innerHTML=""; }, 260);
+    } else stage.innerHTML="";
   }
 
-  function resize(){
-    dpr = Math.max(1, Math.min(2, devicePixelRatio||1));
-    W = innerWidth|0; H = innerHeight|0;
-    canvas.width = (W*dpr)|0;
-    canvas.height = (H*dpr)|0;
-    canvas.style.width = W+"px";
-    canvas.style.height = H+"px";
-    ctx.setTransform(dpr,0,0,dpr,0,0);
+  function render(scene){
+    clearStage(true);
 
-    cols = Math.floor(W/PIXEL);
-    rows = Math.floor(H/PIXEL);
+    const wrap = document.createElement("div");
+    wrap.className = "fadeInUp";
 
-    target = new Array(cols*rows).fill(0);
-    intensity = new Array(cols*rows).fill(0);
-
-    // ✅ Noise ثابتة لكل خلية (بدون jitter متغير يوجع العين)
-    noise = new Array(cols*rows).fill(0).map(()=>rand(0.85,1.15));
-
-    buildTextTarget(" ");
-  }
-
-  function buildTextTarget(text, isBig=false){
-    const off = document.createElement("canvas");
-    off.width = cols; off.height = rows;
-    const o = off.getContext("2d");
-
-    o.clearRect(0,0,cols,rows);
-    o.fillStyle="#000"; o.fillRect(0,0,cols,rows);
-
-    const base = Math.min(cols, rows);
-    const fontSize = Math.floor(base * (isBig ? 0.30 : 0.22));
-    o.font = `900 ${fontSize}px system-ui, Arial`;
-    o.textAlign="center";
-    o.textBaseline="middle";
-    o.fillStyle="#fff";
-
-    // simple wrap
-    const words = text.split(" ");
-    const lines = [];
-    let line = "";
-    const maxLen = isBig ? 11 : 16;
-    for(const w of words){
-      const next = (line ? line+" " : "") + w;
-      if(next.length > maxLen && line){
-        lines.push(line);
-        line = w;
-      } else line = next;
+    if(scene.type === "silence"){
+      // سكون مقصود: نخلي الشاشة فاضية + نقطة Accent تتنفس
+      wrap.innerHTML = `
+        <div class="topline">
+          <span class="pulseAccent"><span class="dot"></span></span>
+        </div>
+        <div class="sub">...</div>
+      `;
     }
-    if(line) lines.push(line);
 
-    const gap = Math.floor(fontSize*0.95);
-    const startY = Math.floor(rows/2) - Math.floor((lines.length-1)*gap/2);
-    lines.forEach((ln,i)=> o.fillText(ln, Math.floor(cols/2), startY + i*gap));
-
-    const data = o.getImageData(0,0,cols,rows).data;
-    for(let i=0;i<cols*rows;i++){
-      target[i] = data[i*4+3] > 20 ? 1 : 0;
+    if(scene.type === "count"){
+      wrap.innerHTML = `
+        <div class="topline">
+          <span class="dot"></span><span>COUNTDOWN</span><span class="dot"></span>
+        </div>
+        <div class="count">${scene.value}</div>
+        <div class="sub">get ready</div>
+      `;
     }
+
+    if(scene.type === "text"){
+      wrap.innerHTML = `
+        <div class="topline"><span class="dot"></span><span>${scene.top}</span><span class="dot"></span></div>
+        <h1 class="big">${scene.big}</h1>
+        ${scene.mid ? `<p class="mid">${scene.mid}</p>` : ``}
+        <div class="sub">tap to skip</div>
+      `;
+    }
+
+    stage.appendChild(wrap);
   }
 
-  // ===== timeline =====
-  function currentSlide(now){
-    const t = now - startTime;
-    let acc = 0;
-    for(let i=0;i<SEQ.length;i++){
-      const a0 = acc, a1 = acc + SEQ[i].ms;
-      if(t >= a0 && t < a1){
-        return { idx:i, local:(t-a0)/SEQ[i].ms, slide:SEQ[i] };
+  function next(){
+    if(timer) { clearTimeout(timer); timer=null; }
+
+    const scene = scenes[idx];
+    render(scene);
+
+    timer = setTimeout(() => {
+      idx++;
+      if(idx >= scenes.length){
+        // loop by default
+        idx = 0;
       }
-      acc = a1;
-    }
-    return { idx:-1, local:0, slide:null };
+      next();
+    }, scene.ms);
   }
 
-  // ===== fireworks (soft) =====
-  function launchRocket(x){
-    rockets.push({ x, y:H+10, vx: rand(-0.5,0.5), vy: rand(-9.5,-11.5), life: rand(35,55), trail:[] });
-  }
-  function explode(x,y,heavy=false){
-    const n = Math.floor(heavy ? rand(120,150) : rand(70,95));
-    for(let i=0;i<n;i++){
-      const a = rand(0, Math.PI*2);
-      const sp = rand(1.6, heavy ? 5.0 : 4.0);
-      const life = rand(heavy ? 60 : 40, heavy ? 90 : 65);
-      sparks.push({ x,y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, g:0.11, life, maxLife:life });
-    }
-
-    const c = Math.floor(heavy ? rand(45,65) : rand(25,40));
-    for(let i=0;i<c;i++){
-      const life = rand(heavy ? 120 : 85, heavy ? 170 : 130);
-      // ✅ لون ثابت لكل كونفيتي (بدون فلاش عشوائي)
-      const col = [Math.floor(rand(160,230)), Math.floor(rand(170,240)), 255];
-      confetti.push({
-        x,y, vx:rand(-2.6,2.6), vy:rand(-4.5, heavy?-9.5:-8.0),
-        rot:rand(0,Math.PI*2), vr:rand(-0.15,0.15),
-        size:rand(4,7), life, maxLife:life, col
-      });
-    }
+  function start(){
+    if(timer) { clearTimeout(timer); timer=null; }
+    idx = 0;
+    stage.innerHTML = "";
+    next();
   }
 
-  function updateFireworks(){
-    for(let i=rockets.length-1;i>=0;i--){
-      const r = rockets[i];
-      r.x += r.vx; r.y += r.vy;
-      r.vy += 0.09; r.life--;
-
-      r.trail.push({x:r.x,y:r.y});
-      if(r.trail.length>14) r.trail.shift();
-
-      if(r.life<=0 || r.vy>0){
-        explode(r.x,r.y,false);
-        rockets.splice(i,1);
-      }
-    }
-
-    for(let i=sparks.length-1;i>=0;i--){
-      const s = sparks[i];
-      s.x += s.vx; s.y += s.vy;
-      s.vx *= 0.986; s.vy *= 0.986;
-      s.vy += s.g; s.life--;
-      if(s.life<=0) sparks.splice(i,1);
-    }
-
-    for(let i=confetti.length-1;i>=0;i--){
-      const c = confetti[i];
-      c.x += c.vx; c.y += c.vy;
-      c.vy += 0.17; c.vx *= 0.99;
-      c.rot += c.vr; c.life--;
-      if(c.life<=0 || c.y>H+60) confetti.splice(i,1);
-    }
-  }
-
-  function drawFireworks(){
-    // trails
-    for(const r of rockets){
-      ctx.beginPath();
-      for(let i=0;i<r.trail.length;i++){
-        const p = r.trail[i];
-        if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
-      }
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "rgba(200,210,255,0.18)";
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(r.x,r.y,2.6,0,Math.PI*2);
-      ctx.fillStyle = "rgba(230,235,255,0.85)";
-      ctx.fill();
-    }
-
-    // sparks
-    for(const s of sparks){
-      const a = Math.max(0, Math.min(1, s.life/s.maxLife));
-      ctx.beginPath();
-      ctx.arc(s.x,s.y,1.6,0,Math.PI*2);
-      ctx.fillStyle = `rgba(180,200,255,${0.12+0.72*a})`;
-      ctx.fill();
-    }
-
-    // confetti
-    for(const c of confetti){
-      const a = Math.max(0, Math.min(1, c.life/c.maxLife));
-      ctx.save();
-      ctx.translate(c.x,c.y);
-      ctx.rotate(c.rot);
-      ctx.globalAlpha = a*0.9;
-      ctx.fillStyle = `rgb(${c.col[0]},${c.col[1]},${c.col[2]})`;
-      ctx.fillRect(-c.size/2,-c.size/2,c.size,c.size*0.65);
-      ctx.restore();
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  // ===== Pixel text draw (stable + soft) =====
-  function drawPixelText(now){
-    const info = currentSlide(now);
-
-    if(info.idx === -1){
-      // loop cleanly
-      startTime = performance.now();
-      lastIdx = -999;
-      return;
-    }
-
-    const { idx, local, slide } = info;
-
-    if(idx !== lastIdx){
-      lastIdx = idx;
-      buildTextTarget(slide.text, !!slide.big);
-
-      if(slide.boom){
-        // fireworks gentle but present
-        for(let i=0;i<(slide.big?5:3);i++) launchRocket(rand(W*0.25, W*0.75));
-        explode(rand(W*0.30, W*0.70), rand(H*0.22, H*0.52), !!slide.big);
-      }
-    }
-
-    // show -> hold -> fade
-    const inEnd = 0.55;
-    const outStart = 0.78;
-    const want = (local < outStart) ? 1 : 0;
-
-    // pulse only for big slides, gently
-    const pulse = slide.big ? (0.92 + 0.08*Math.sin(now*0.005)) : 1;
-
-    for(let y=0;y<rows;y++){
-      for(let x=0;x<cols;x++){
-        const i = y*cols + x;
-        const desired = target[i] ? want : 0;
-
-        // smooth approach with per-cell noise
-        const n = noise[i];
-        if(desired > intensity[i]){
-          intensity[i] = Math.min(1, intensity[i] + FADE_IN*n);
-        } else {
-          intensity[i] = Math.max(0, intensity[i] - FADE_OUT*n);
-        }
-
-        const t = intensity[i];
-        if(t > 0.02){
-          const coreA = (0.25 + 0.75*t) * pulse;
-          const glowA = (0.03 + 0.10*t) * pulse; // ✅ glow خفيف
-
-          // glow (soft)
-          ctx.fillStyle = `rgba(${COLOR_GLOW[0]},${COLOR_GLOW[1]},${COLOR_GLOW[2]},${glowA})`;
-          roundedRect(x*PIXEL-1, y*PIXEL-1, PIXEL+2, PIXEL+2, RADIUS+2);
-          ctx.fill();
-
-          // core (stable)
-          ctx.fillStyle = `rgba(${COLOR_CORE[0]},${COLOR_CORE[1]},${COLOR_CORE[2]},${coreA})`;
-          roundedRect(x*PIXEL, y*PIXEL, PIXEL-1, PIXEL-1, RADIUS);
-          ctx.fill();
-        }
-      }
-    }
-  }
-
-  function frame(now){
-    ctx.fillStyle = BG;
-    ctx.fillRect(0,0,W,H);
-
-    updateFireworks();
-    drawPixelText(now);
-    drawFireworks();
-
-    requestAnimationFrame(frame);
-  }
-
-  function replay(){
-    startTime = performance.now();
-    lastIdx = -999;
-    intensity.fill(0);
-    rockets.length = sparks.length = confetti.length = 0;
-
-    // intro gentle burst
-    for(let i=0;i<4;i++) launchRocket(rand(W*0.25,W*0.75));
-    explode(rand(W*0.35,W*0.65), rand(H*0.25,H*0.45), true);
-  }
-
-  addEventListener("resize", resize);
-  document.getElementById("replay").addEventListener("click", replay);
-
-  // tap -> fireworks (not too bright)
+  // Controls
+  replayBtn.addEventListener("click", start);
   addEventListener("pointerdown", (e)=>{
-    launchRocket(e.clientX);
-    explode(e.clientX, e.clientY, true);
+    // tap = skip to next scene (أنت طلبت مفاجأة سريعة)
+    idx = (idx + 1) % scenes.length;
+    next();
   });
 
-  resize();
-  replay();
-  requestAnimationFrame(frame);
+  start();
 })();
 </script>
 </body>
