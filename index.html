@@ -3,28 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Happy 17th Birthday</title>
+  <title>Birthday Surprise</title>
   <style>
-    html,body{margin:0;height:100%;background:#05060a;overflow:hidden}
+    html,body{margin:0;height:100%;background:#070913;overflow:hidden}
     canvas{display:block;width:100vw;height:100vh}
     .ui{
       position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
       display:flex; gap:10px; align-items:center;
-      font-family:system-ui, Arial; color:#e2e8f0; font-size:14px;
+      font-family:system-ui, Arial; color:#e5e7eb; font-size:14px;
       padding:10px 12px; border-radius:999px;
-      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.10);
-      backdrop-filter: blur(8px);
-      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      background:rgba(0,0,0,.30); border:1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(10px);
       user-select:none;
     }
     .btn{
-      cursor:pointer;
-      padding:8px 12px; border-radius:999px;
+      cursor:pointer; padding:8px 12px; border-radius:999px;
       border:1px solid rgba(255,255,255,.14);
       background:rgba(255,255,255,.06);
       color:#fff;
     }
-    .btn:active{transform:scale(.98)}
     .tag{opacity:.85}
   </style>
 </head>
@@ -33,7 +30,7 @@
 
 <div class="ui">
   <button class="btn" id="replay">Replay ✨</button>
-  <span class="tag">Tap anywhere for extra fireworks 🎆</span>
+  <span class="tag">Tap for fireworks 🎆</span>
 </div>
 
 <script>
@@ -42,67 +39,63 @@
   const ctx = canvas.getContext("2d", { alpha:false });
 
   // =========================
-  //  ROOSH SEQUENCE (EDIT HERE)
+  //  SOFT / CLEAN SETTINGS
   // =========================
-  // كل عنصر: نص + مدة ظهوره بالمللي ثانية + هل يعمل "تفجير" وقت ظهوره؟
-  const SEQ = [
-    { text: "WAIT FOR IT...",                 ms: 1700, boom: false },
-    { text: "🔥 BOOM 🔥",                      ms: 900,  boom: true  },
-    { text: "HAPPY 17TH BIRTHDAY",            ms: 1900, boom: true  },
-    { text: "MAZEN",                          ms: 2200, boom: false, big: true },
-    { text: "17 YEARS OF ENERGY ⚡",          ms: 1400, boom: true  },
-    { text: "DREAMS 🚀  LOUD LAUGHS 😎",       ms: 1500, boom: false },
-    { text: "YOU'RE NOT JUST GETTING OLDER",  ms: 1500, boom: false },
-    { text: "YOU'RE GETTING STRONGER",        ms: 1500, boom: true  },
-    { text: "THIS YEAR?",                     ms: 900,  boom: false },
-    { text: "BIGGER MOVES  HIGHER GOALS",     ms: 1500, boom: true  },
-    { text: "NO LIMITS",                      ms: 1400, boom: true  },
-    { text: "STAY CRAZY  STAY REAL  STAY YOU",ms: 1700, boom: false },
-    { text: "THE LEGEND STARTS NOW 💥",       ms: 2400, boom: true, big: true },
-  ];
+  const PIXEL = 10;          // ✅ أكبر = Pixel شكلها أشيك وأريح
+  const RADIUS = 3;          // ✅ تدوير خفيف للمربعات
+  const FADE_IN = 0.11;      // ظهور ناعم
+  const FADE_OUT = 0.13;     // اختفاء ناعم
+  const BG = "#070913";
 
-  const PIXEL = 6;         // حجم البيكسلز (كبره لو عايز بيكسلة أقوى: 8 أو 10)
-  const FADE_IN = 0.08;    // سرعة ظهور البيكسلز
-  const FADE_OUT = 0.09;   // سرعة اختفاء البيكسلز
+  // لون واحد هادي (blue-purple) بدل ألوان عشوائية مؤذية
+  const COLOR_CORE = [170, 190, 255];   // core
+  const COLOR_GLOW = [95, 120, 255];    // glow (خفيف)
+
+  // ✅ مفيش ألعاب نارية عشوائية في الخلفية
+  // fireworks تحصل فقط عند بداية بعض السلايدز أو عند الضغط
+
+  // =========================
+  //  SCRIPT (مراحل المفاجأة)
+  // =========================
+  const SEQ = [
+    { text:"WAIT FOR IT...",                 ms:1600, boom:false, big:false },
+    { text:"HAPPY 17TH BIRTHDAY",            ms:1800, boom:true,  big:false },
+    { text:"MAZEN",                          ms:2200, boom:false, big:true  },
+    { text:"17 YEARS OF ENERGY ⚡",          ms:1400, boom:true,  big:false },
+    { text:"DREAMS 🚀  LOUD LAUGHS 😎",       ms:1500, boom:false, big:false },
+    { text:"YOU'RE GETTING STRONGER",        ms:1500, boom:true,  big:false },
+    { text:"NO LIMITS",                      ms:1400, boom:true,  big:true  },
+    { text:"THE LEGEND STARTS NOW",          ms:2400, boom:true,  big:true  },
+  ];
 
   // ===== STATE =====
   let W,H,cols,rows,dpr;
-  let target=[], intensity=[], jitterX=[], jitterY=[];
-  let startTime = performance.now();
+  let target=[], intensity=[], noise=[];
 
-  // fireworks
+  let startTime = performance.now();
+  let lastIdx = -999;
+
+  // fireworks particles
   const rockets = [];
   const sparks = [];
   const confetti = [];
 
   const rand = (a,b)=>a+Math.random()*(b-a);
 
-  // ===== Timeline helpers =====
-  function totalDuration(){
-    return SEQ.reduce((s,x)=>s+x.ms,0);
+  function roundedRect(x,y,w,h,r){
+    const rr = Math.min(r, w/2, h/2);
+    ctx.beginPath();
+    ctx.moveTo(x+rr,y);
+    ctx.arcTo(x+w,y, x+w,y+h, rr);
+    ctx.arcTo(x+w,y+h, x,y+h, rr);
+    ctx.arcTo(x,y+h, x,y, rr);
+    ctx.arcTo(x,y, x+w,y, rr);
+    ctx.closePath();
   }
 
-  function currentSlide(now){
-    const t = now - startTime;
-    let acc = 0;
-    for(let i=0;i<SEQ.length;i++){
-      const a0 = acc;
-      const a1 = acc + SEQ[i].ms;
-      if(t >= a0 && t < a1){
-        const local = (t - a0) / SEQ[i].ms; // 0..1
-        return { idx:i, local, slide:SEQ[i] };
-      }
-      acc = a1;
-    }
-    // loop
-    return { idx:-1, local:0, slide:null };
-  }
-
-  // ===== Canvas + text target =====
   function resize(){
     dpr = Math.max(1, Math.min(2, devicePixelRatio||1));
-    W = innerWidth|0;
-    H = innerHeight|0;
+    W = innerWidth|0; H = innerHeight|0;
     canvas.width = (W*dpr)|0;
     canvas.height = (H*dpr)|0;
     canvas.style.width = W+"px";
@@ -114,8 +107,9 @@
 
     target = new Array(cols*rows).fill(0);
     intensity = new Array(cols*rows).fill(0);
-    jitterX = new Array(cols*rows).fill(0).map(()=> (Math.random()-0.5)*0.8);
-    jitterY = new Array(cols*rows).fill(0).map(()=> (Math.random()-0.5)*0.8);
+
+    // ✅ Noise ثابتة لكل خلية (بدون jitter متغير يوجع العين)
+    noise = new Array(cols*rows).fill(0).map(()=>rand(0.85,1.15));
 
     buildTextTarget(" ");
   }
@@ -126,25 +120,23 @@
     const o = off.getContext("2d");
 
     o.clearRect(0,0,cols,rows);
-    o.fillStyle="#000";
-    o.fillRect(0,0,cols,rows);
+    o.fillStyle="#000"; o.fillRect(0,0,cols,rows);
 
-    // font size responsive
     const base = Math.min(cols, rows);
-    const fontSize = Math.floor(base * (isBig ? 0.28 : 0.20));
+    const fontSize = Math.floor(base * (isBig ? 0.30 : 0.22));
     o.font = `900 ${fontSize}px system-ui, Arial`;
     o.textAlign="center";
     o.textBaseline="middle";
     o.fillStyle="#fff";
 
-    // Split long text a bit if needed (simple wrap)
-    const maxChars = Math.floor(cols * 0.9);
+    // simple wrap
     const words = text.split(" ");
     const lines = [];
     let line = "";
+    const maxLen = isBig ? 11 : 16;
     for(const w of words){
-      const next = (line ? line + " " : "") + w;
-      if(next.length > Math.max(14, Math.floor(maxChars/10)) && line){
+      const next = (line ? line+" " : "") + w;
+      if(next.length > maxLen && line){
         lines.push(line);
         line = w;
       } else line = next;
@@ -153,60 +145,50 @@
 
     const gap = Math.floor(fontSize*0.95);
     const startY = Math.floor(rows/2) - Math.floor((lines.length-1)*gap/2);
-
-    lines.forEach((ln,i)=>{
-      o.fillText(ln, Math.floor(cols/2), startY + i*gap);
-    });
+    lines.forEach((ln,i)=> o.fillText(ln, Math.floor(cols/2), startY + i*gap));
 
     const data = o.getImageData(0,0,cols,rows).data;
-    for(let y=0;y<rows;y++){
-      for(let x=0;x<cols;x++){
-        const idx = y*cols+x;
-        const a = data[idx*4+3];
-        target[idx] = a>20 ? 1 : 0;
-      }
+    for(let i=0;i<cols*rows;i++){
+      target[i] = data[i*4+3] > 20 ? 1 : 0;
     }
   }
 
-  // ===== FIREWORKS =====
-  function launchRocket(x){
-    rockets.push({
-      x, y:H+20,
-      vx: rand(-0.7,0.7),
-      vy: rand(-10.5,-13.5),
-      life: rand(40,70),
-      trail: []
-    });
+  // ===== timeline =====
+  function currentSlide(now){
+    const t = now - startTime;
+    let acc = 0;
+    for(let i=0;i<SEQ.length;i++){
+      const a0 = acc, a1 = acc + SEQ[i].ms;
+      if(t >= a0 && t < a1){
+        return { idx:i, local:(t-a0)/SEQ[i].ms, slide:SEQ[i] };
+      }
+      acc = a1;
+    }
+    return { idx:-1, local:0, slide:null };
   }
 
-  function explode(x,y,forceBig=false){
-    const n = Math.floor(forceBig ? rand(130,190) : rand(80,130));
+  // ===== fireworks (soft) =====
+  function launchRocket(x){
+    rockets.push({ x, y:H+10, vx: rand(-0.5,0.5), vy: rand(-9.5,-11.5), life: rand(35,55), trail:[] });
+  }
+  function explode(x,y,heavy=false){
+    const n = Math.floor(heavy ? rand(120,150) : rand(70,95));
     for(let i=0;i<n;i++){
       const a = rand(0, Math.PI*2);
-      const sp = rand(1.7, forceBig ? 6.2 : 5.2);
-      const life = rand(forceBig ? 55 : 35, forceBig ? 95 : 70);
-      sparks.push({
-        x,y,
-        vx: Math.cos(a)*sp,
-        vy: Math.sin(a)*sp,
-        g: 0.12,
-        life,
-        maxLife: life
-      });
+      const sp = rand(1.6, heavy ? 5.0 : 4.0);
+      const life = rand(heavy ? 60 : 40, heavy ? 90 : 65);
+      sparks.push({ x,y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, g:0.11, life, maxLife:life });
     }
 
-    const c = Math.floor(forceBig ? rand(70,110) : rand(40,70));
+    const c = Math.floor(heavy ? rand(45,65) : rand(25,40));
     for(let i=0;i<c;i++){
-      const life = rand(forceBig ? 110 : 80, forceBig ? 190 : 140);
+      const life = rand(heavy ? 120 : 85, heavy ? 170 : 130);
+      // ✅ لون ثابت لكل كونفيتي (بدون فلاش عشوائي)
+      const col = [Math.floor(rand(160,230)), Math.floor(rand(170,240)), 255];
       confetti.push({
-        x,y,
-        vx: rand(-3.5,3.5),
-        vy: rand(-5, forceBig ? -11 : -9),
-        rot: rand(0,Math.PI*2),
-        vr: rand(-0.22,0.22),
-        size: rand(3,8),
-        life,
-        maxLife: life
+        x,y, vx:rand(-2.6,2.6), vy:rand(-4.5, heavy?-9.5:-8.0),
+        rot:rand(0,Math.PI*2), vr:rand(-0.15,0.15),
+        size:rand(4,7), life, maxLife:life, col
       });
     }
   }
@@ -215,11 +197,10 @@
     for(let i=rockets.length-1;i>=0;i--){
       const r = rockets[i];
       r.x += r.vx; r.y += r.vy;
-      r.vy += 0.10;
-      r.life--;
+      r.vy += 0.09; r.life--;
 
       r.trail.push({x:r.x,y:r.y});
-      if(r.trail.length>18) r.trail.shift();
+      if(r.trail.length>14) r.trail.shift();
 
       if(r.life<=0 || r.vy>0){
         explode(r.x,r.y,false);
@@ -230,162 +211,127 @@
     for(let i=sparks.length-1;i>=0;i--){
       const s = sparks[i];
       s.x += s.vx; s.y += s.vy;
-      s.vx *= 0.985; s.vy *= 0.985;
-      s.vy += s.g;
-      s.life--;
+      s.vx *= 0.986; s.vy *= 0.986;
+      s.vy += s.g; s.life--;
       if(s.life<=0) sparks.splice(i,1);
     }
 
     for(let i=confetti.length-1;i>=0;i--){
       const c = confetti[i];
       c.x += c.vx; c.y += c.vy;
-      c.vy += 0.18;
-      c.vx *= 0.99;
-      c.rot += c.vr;
-      c.life--;
+      c.vy += 0.17; c.vx *= 0.99;
+      c.rot += c.vr; c.life--;
       if(c.life<=0 || c.y>H+60) confetti.splice(i,1);
     }
   }
 
   function drawFireworks(){
-    // rocket trails
+    // trails
     for(const r of rockets){
       ctx.beginPath();
       for(let i=0;i<r.trail.length;i++){
         const p = r.trail[i];
-        if(i===0) ctx.moveTo(p.x,p.y);
-        else ctx.lineTo(p.x,p.y);
+        if(i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
       }
       ctx.lineWidth = 2;
-      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.strokeStyle = "rgba(200,210,255,0.18)";
       ctx.stroke();
-
       ctx.beginPath();
-      ctx.arc(r.x,r.y,3.2,0,Math.PI*2);
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.arc(r.x,r.y,2.6,0,Math.PI*2);
+      ctx.fillStyle = "rgba(230,235,255,0.85)";
       ctx.fill();
     }
 
     // sparks
     for(const s of sparks){
-      const t = s.life / s.maxLife;
-      const a = Math.max(0, Math.min(1, t));
+      const a = Math.max(0, Math.min(1, s.life/s.maxLife));
       ctx.beginPath();
-      ctx.arc(s.x,s.y,1.7,0,Math.PI*2);
-      ctx.fillStyle = `rgba(${Math.floor(120+140*(1-a))},${Math.floor(110+90*a)},${Math.floor(220)},${0.12+0.88*a})`;
+      ctx.arc(s.x,s.y,1.6,0,Math.PI*2);
+      ctx.fillStyle = `rgba(180,200,255,${0.12+0.72*a})`;
       ctx.fill();
     }
 
     // confetti
     for(const c of confetti){
-      const a = c.life / c.maxLife;
+      const a = Math.max(0, Math.min(1, c.life/c.maxLife));
       ctx.save();
       ctx.translate(c.x,c.y);
       ctx.rotate(c.rot);
-      ctx.globalAlpha = Math.max(0, Math.min(1, a));
-      ctx.fillStyle = `rgba(${Math.floor(rand(120,255))},${Math.floor(rand(80,255))},${Math.floor(rand(120,255))},1)`;
+      ctx.globalAlpha = a*0.9;
+      ctx.fillStyle = `rgb(${c.col[0]},${c.col[1]},${c.col[2]})`;
       ctx.fillRect(-c.size/2,-c.size/2,c.size,c.size*0.65);
       ctx.restore();
       ctx.globalAlpha = 1;
     }
   }
 
-  // ===== Pixel text draw =====
-  let lastIdx = -999;
-
+  // ===== Pixel text draw (stable + soft) =====
   function drawPixelText(now){
-    const slideInfo = currentSlide(now);
+    const info = currentSlide(now);
 
-    // loop when finished
-    if(slideInfo.idx === -1){
+    if(info.idx === -1){
+      // loop cleanly
       startTime = performance.now();
       lastIdx = -999;
       return;
     }
 
-    const { idx, local, slide } = slideInfo;
+    const { idx, local, slide } = info;
 
-    // when slide changes -> rebuild target + do boom if needed
     if(idx !== lastIdx){
       lastIdx = idx;
       buildTextTarget(slide.text, !!slide.big);
 
       if(slide.boom){
-        // انفجار قوي + صواريخ
-        for(let i=0;i<4;i++) launchRocket(rand(W*0.2, W*0.8));
-        explode(rand(W*0.25, W*0.75), rand(H*0.18, H*0.55), !!slide.big);
+        // fireworks gentle but present
+        for(let i=0;i<(slide.big?5:3);i++) launchRocket(rand(W*0.25, W*0.75));
+        explode(rand(W*0.30, W*0.70), rand(H*0.22, H*0.52), !!slide.big);
       }
     }
 
-    // text visibility curve: يظهر في أول 60% ويبدأ يختفي في آخر 25%
-    const inEnd = 0.62;
+    // show -> hold -> fade
+    const inEnd = 0.55;
     const outStart = 0.78;
-    let want = 1;
+    const want = (local < outStart) ? 1 : 0;
 
-    if(local < inEnd) want = 1;          // show
-    else if(local > outStart) want = 0;  // hide
-    else want = 1;                        // hold
-
-    // pulse on big slides for extra drama
-    const pulse = slide.big ? (0.75 + 0.25*Math.sin(now*0.006)) : 1;
+    // pulse only for big slides, gently
+    const pulse = slide.big ? (0.92 + 0.08*Math.sin(now*0.005)) : 1;
 
     for(let y=0;y<rows;y++){
       for(let x=0;x<cols;x++){
         const i = y*cols + x;
+        const desired = target[i] ? want : 0;
 
-        // tiny stars
-        if(Math.random()<0.0016){
-          ctx.fillStyle="rgba(255,255,255,0.03)";
-          ctx.fillRect(x*PIXEL,y*PIXEL,1,1);
-        }
-
-        const isTarget = target[i] ? 1 : 0;
-        const desired = isTarget * want;
-
-        // approach desired
+        // smooth approach with per-cell noise
+        const n = noise[i];
         if(desired > intensity[i]){
-          intensity[i] = Math.min(1, intensity[i] + FADE_IN*(0.6+Math.random()*0.9));
+          intensity[i] = Math.min(1, intensity[i] + FADE_IN*n);
         } else {
-          intensity[i] = Math.max(0, intensity[i] - FADE_OUT*(0.6+Math.random()*0.6));
+          intensity[i] = Math.max(0, intensity[i] - FADE_OUT*n);
         }
-
-        // drift
-        jitterX[i] += (Math.random()-0.5)*0.05;
-        jitterY[i] += (Math.random()-0.5)*0.05;
-        jitterX[i] *= 0.99;
-        jitterY[i] *= 0.99;
 
         const t = intensity[i];
         if(t > 0.02){
-          const r = Math.floor(70 + 150*t);
-          const g = Math.floor(110 + 80*t);
-          const b = Math.floor(210 + 45*t);
+          const coreA = (0.25 + 0.75*t) * pulse;
+          const glowA = (0.03 + 0.10*t) * pulse; // ✅ glow خفيف
 
-          // glow
-          ctx.fillStyle = `rgba(${r},${g},${b},${(0.06+0.16*t)*pulse})`;
-          ctx.fillRect(x*PIXEL-1, y*PIXEL-1, PIXEL+2, PIXEL+2);
+          // glow (soft)
+          ctx.fillStyle = `rgba(${COLOR_GLOW[0]},${COLOR_GLOW[1]},${COLOR_GLOW[2]},${glowA})`;
+          roundedRect(x*PIXEL-1, y*PIXEL-1, PIXEL+2, PIXEL+2, RADIUS+2);
+          ctx.fill();
 
-          // core
-          ctx.fillStyle = `rgba(${r+25},${g+25},${b+25},${(0.25+0.75*t)*pulse})`;
-          ctx.fillRect(
-            x*PIXEL + jitterX[i],
-            y*PIXEL + jitterY[i],
-            PIXEL-1,
-            PIXEL-1
-          );
+          // core (stable)
+          ctx.fillStyle = `rgba(${COLOR_CORE[0]},${COLOR_CORE[1]},${COLOR_CORE[2]},${coreA})`;
+          roundedRect(x*PIXEL, y*PIXEL, PIXEL-1, PIXEL-1, RADIUS);
+          ctx.fill();
         }
       }
     }
   }
 
-  // ===== MAIN LOOP =====
   function frame(now){
-    ctx.fillStyle = "#05060a";
+    ctx.fillStyle = BG;
     ctx.fillRect(0,0,W,H);
-
-    // subtle random fireworks in background
-    if(Math.random() < 0.018) launchRocket(rand(W*0.15, W*0.85));
-    if(Math.random() < 0.006) explode(rand(W*0.2, W*0.8), rand(H*0.18, H*0.55), false);
 
     updateFireworks();
     drawPixelText(now);
@@ -396,28 +342,24 @@
 
   function replay(){
     startTime = performance.now();
-    intensity.fill(0);
-    rockets.length = 0;
-    sparks.length = 0;
-    confetti.length = 0;
     lastIdx = -999;
+    intensity.fill(0);
+    rockets.length = sparks.length = confetti.length = 0;
 
-    // intro kick
-    for(let i=0;i<7;i++) launchRocket(rand(W*0.2,W*0.8));
-    for(let i=0;i<5;i++) explode(rand(W*0.2,W*0.8), rand(H*0.2,H*0.55), true);
+    // intro gentle burst
+    for(let i=0;i<4;i++) launchRocket(rand(W*0.25,W*0.75));
+    explode(rand(W*0.35,W*0.65), rand(H*0.25,H*0.45), true);
   }
 
-  // interactions
   addEventListener("resize", resize);
   document.getElementById("replay").addEventListener("click", replay);
 
+  // tap -> fireworks (not too bright)
   addEventListener("pointerdown", (e)=>{
-    const x = e.clientX, y = e.clientY;
-    launchRocket(x);
-    explode(x, y, true);
+    launchRocket(e.clientX);
+    explode(e.clientX, e.clientY, true);
   });
 
-  // init
   resize();
   replay();
   requestAnimationFrame(frame);
@@ -425,4 +367,3 @@
 </script>
 </body>
 </html>
-
