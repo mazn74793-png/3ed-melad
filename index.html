@@ -84,7 +84,6 @@
       50%{transform:translate(-50%,-50%) scale(1.55);opacity:.75}
     }
 
-    /* مساعده صغيرة مش مزعجة */
     .hint{
       position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
       padding:10px 12px;border-radius:999px;
@@ -107,20 +106,18 @@
     <div class="card" id="stage"></div>
   </div>
 
-  <!-- مفيش زرار Replay ظاهر -->
-  <div class="hint">tap anywhere to skip ▸</div>
+  <div class="hint" id="hint">tap to skip ▸</div>
 
 <script>
 (() => {
   const stage = document.getElementById("stage");
+  const hint = document.getElementById("hint");
 
-  // ✅ الاسم
   const NAME = "MAZEN";
 
-  // ✅ شرطك: بعد العد التنازلي، كل مشهد 5 ثواني على الأقل
-  const MIN_READ_MS_AFTER_COUNTDOWN = 5000;
-
-  // ✅ Scenes (نحدد للعد التنازلي والسكون أزمنة خاصة)
+  // Scenes:
+  // - Auto: intro + countdown + silence
+  // - Manual: everything after silence (tap to advance)
   const scenes = [
     { type:"text",    ms:1400, top:"PRIVATE LINK", big:"WAIT.", mid:"Don’t blink." },
     { type:"text",    ms:1800, top:"NOT A NORMAL BIRTHDAY", big:"THIS IS NOT A NORMAL BIRTHDAY.", mid:"Keep watching." },
@@ -131,21 +128,20 @@
 
     { type:"silence", ms:900 },
 
-    // بعد هنا: هنفرض 5 ثواني كحد أدنى (حتى لو ms أقل)
-    { type:"text",    ms:1700, top:"TODAY",   big:`${NAME}`, mid:"TURNS 17." },
-    { type:"text",    ms:1600, top:"LEVEL UP",big:"NO NOISE.", mid:"NO FILTERS." },
-    { type:"text",    ms:1700, top:"JUST",    big:"POWER.", mid:"Built different." },
-    { type:"text",    ms:1800, top:"THIS YEAR", big:"BIGGER MOVES.", mid:"Higher goals." },
-    { type:"text",    ms:1700, top:"MODE",    big:"NO LIMITS.", mid:"No excuses." },
-    { type:"text",    ms:2400, top:"FINAL",   big:"THE STORY STARTS NOW.", mid:"Happy 17th Birthday." },
+    // Manual from here:
+    { type:"text",    top:"TODAY",    big:`${NAME}`, mid:"TURNS 17." },
+    { type:"text",    top:"LEVEL UP", big:"NO NOISE.", mid:"NO FILTERS." },
+    { type:"text",    top:"JUST",     big:"POWER.", mid:"Built different." },
+    { type:"text",    top:"THIS YEAR",big:"BIGGER MOVES.", mid:"Higher goals." },
+    { type:"text",    top:"MODE",     big:"NO LIMITS.", mid:"No excuses." },
+    { type:"text",    top:"FINAL",    big:"THE STORY STARTS NOW.", mid:"Happy 17th Birthday." },
   ];
+
+  // index where manual starts
+  const manualStartIndex = scenes.findIndex(s => s.type === "silence") + 1;
 
   let timer = null;
   let idx = 0;
-
-  // هنحدد نقطة "نهاية العد التنازلي" عشان بعدها نفعل 5 ثواني
-  const countdownEndIndex = scenes.findIndex(s => s.type === "silence"); // أول سكون بعد 1
-  const afterCountdownStartsAt = countdownEndIndex + 1;
 
   function clearStage(animOut=false){
     if(!stage.firstChild) return;
@@ -157,7 +153,6 @@
 
   function render(scene){
     clearStage(true);
-
     const wrap = document.createElement("div");
     wrap.className = "fadeInUp";
 
@@ -181,50 +176,62 @@
         <div class="topline"><span class="dot"></span><span>${scene.top}</span><span class="dot"></span></div>
         <h1 class="big">${scene.big}</h1>
         ${scene.mid ? `<p class="mid">${scene.mid}</p>` : ``}
-        <div class="sub">tap to skip</div>
+        <div class="sub">tap for next</div>
       `;
     }
-
     stage.appendChild(wrap);
+
+    // Update hint depending on mode
+    if(idx >= manualStartIndex) hint.textContent = "tap for next ▸";
+    else hint.textContent = "tap to skip ▸";
   }
 
-  function effectiveDuration(i){
-    const s = scenes[i];
-    // بعد العد التنازلي: الحد الأدنى 5 ثواني للمشاهد النصية
-    if(i >= afterCountdownStartsAt && s.type === "text"){
-      return Math.max(s.ms, MIN_READ_MS_AFTER_COUNTDOWN);
-    }
-    return s.ms;
-  }
-
-  function next(){
+  function scheduleAutoAdvance(ms){
     if(timer){ clearTimeout(timer); timer=null; }
-
-    const scene = scenes[idx];
-    render(scene);
-
     timer = setTimeout(() => {
       idx++;
       if(idx >= scenes.length){
-        // ✅ يعمل Replay تلقائي لما يخلص
+        // لو خلصت في الآخر: Replay تلقائي
         idx = 0;
       }
-      next();
-    }, effectiveDuration(idx));
+      showCurrent();
+    }, ms);
+  }
+
+  function showCurrent(){
+    const scene = scenes[idx];
+    render(scene);
+
+    // Auto only before manualStartIndex
+    if(idx < manualStartIndex){
+      scheduleAutoAdvance(scene.ms);
+    } else {
+      // Manual: no timer
+      if(timer){ clearTimeout(timer); timer=null; }
+    }
   }
 
   function start(){
     if(timer){ clearTimeout(timer); timer=null; }
     idx = 0;
     stage.innerHTML = "";
-    next();
+    showCurrent();
   }
 
-  // ✅ Tap = Skip لأي مشهد
-  addEventListener("pointerdown", ()=>{
-    idx = (idx + 1) % scenes.length;
-    next();
-  });
+  function nextManualOrSkip(){
+    // tap always advances to next scene
+    if(timer){ clearTimeout(timer); timer=null; }
+    idx++;
+    if(idx >= scenes.length){
+      idx = 0; // replay automatically
+    }
+    showCurrent();
+  }
+
+  // Tap anywhere:
+  // - during auto section: acts as skip (next)
+  // - during manual section: acts as next (exactly what you want)
+  addEventListener("pointerdown", nextManualOrSkip);
 
   start();
 })();
