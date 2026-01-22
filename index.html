@@ -6,14 +6,18 @@
   <title>Birthday Surprise</title>
   <style>
     :root{
-      --bg:#070812;
-      --fg:#e9eefc;
+      --bg:#070812; --fg:#e9eefc;
       --muted:rgba(233,238,252,.72);
       --dim:rgba(233,238,252,.18);
       --accent:#7c8cff;
     }
     html,body{height:100%;margin:0;background:var(--bg);overflow:hidden}
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      /* يمنع double tap zoom وبعض مشاكل اللمس */
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     .bg{
       position:fixed;inset:0;
@@ -21,7 +25,6 @@
         radial-gradient(1200px 900px at 20% 20%, rgba(124,140,255,.14), transparent 60%),
         radial-gradient(1000px 700px at 80% 70%, rgba(124,140,255,.10), transparent 60%),
         linear-gradient(180deg, rgba(255,255,255,.03), transparent 20%, transparent 80%, rgba(255,255,255,.02));
-      filter:saturate(1.05);
     }
     .grain{
       position:fixed;inset:-20%;
@@ -67,8 +70,8 @@
       from{opacity:0;transform:translate3d(0,14px,0) scale(.985)}
       to{opacity:1;transform:translate3d(0,0,0) scale(1)}
     }
-    .fadeOut{animation:fadeOut .45s ease both}
-    @keyframes fadeOut{to{opacity:0;transform:translate3d(0,-10px,0) scale(.99)}}
+    .fadeOut{animation:fadeOut .35s ease both}
+    @keyframes fadeOut{to{opacity:0;transform:translate3d(0,-8px,0) scale(.99)}}
 
     .pulseAccent{display:inline-block;position:relative}
     .pulseAccent::after{
@@ -91,10 +94,7 @@
       color:var(--dim);font-size:13px;letter-spacing:.06em;text-transform:uppercase;
       backdrop-filter:blur(10px);
       user-select:none;
-    }
-
-    @media (prefers-reduced-motion: reduce){
-      .grain,.fadeInUp,.fadeOut,.pulseAccent::after{animation:none !important}
+      pointer-events:none;
     }
   </style>
 </head>
@@ -115,8 +115,6 @@
 
   const NAME = "MAZEN";
 
-  // Auto: intro + countdown + silence
-  // Manual: everything after silence
   const scenes = [
     { type:"text",    ms:1600, top:"PRIVATE LINK", big:"WAIT.", mid:"Don’t blink." },
     { type:"text",    ms:1900, top:"NOT A NORMAL BIRTHDAY", big:"THIS IS NOT A NORMAL BIRTHDAY.", mid:"Keep watching." },
@@ -139,24 +137,34 @@
   const manualStartIndex = scenes.findIndex(s => s.type === "silence") + 1;
 
   let idx = 0;
-  let timer = null;
 
-  // ✅ يمنع الضغط يعمل Next مرتين/تلاتة
-  let tapLocked = false;
-  const TAP_COOLDOWN_MS = 320;
+  // ==== Timer safety (Token) ====
+  let timerId = null;
+  let timerToken = 0; // أي تايمر قديم يبقى token مختلف ويتجاهله
 
-  function clearTimer(){
-    if(timer){
-      clearTimeout(timer);
-      timer = null;
+  function killTimer(){
+    timerToken++;
+    if(timerId !== null){
+      clearTimeout(timerId);
+      timerId = null;
     }
+  }
+
+  // ==== Tap safety (Lock) ====
+  let tapLock = false;
+  let lastTapAt = 0;
+  const TAP_GUARD_MS = 450;
+
+  function lockTap(){
+    tapLock = true;
+    setTimeout(()=> tapLock = false, TAP_GUARD_MS);
   }
 
   function clearStage(animOut=false){
     if(!stage.firstChild) return;
     if(animOut){
       stage.firstChild.classList.add("fadeOut");
-      setTimeout(()=>{ stage.innerHTML=""; }, 240);
+      setTimeout(()=>{ stage.innerHTML=""; }, 200);
     } else stage.innerHTML="";
   }
 
@@ -191,59 +199,71 @@
     }
 
     stage.appendChild(wrap);
-
     hint.textContent = (idx >= manualStartIndex) ? "tap for next ▸" : "tap to skip ▸";
   }
 
+  function scheduleAuto(ms){
+    killTimer();
+    const myToken = timerToken; // snapshot
+    timerId = setTimeout(() => {
+      // لو حد عمل killTimer بعدها، التايمر ده يتجاهل نفسه
+      if(myToken !== timerToken) return;
+
+      idx++;
+      if(idx >= scenes.length) idx = 0;
+      showCurrent();
+    }, ms);
+  }
+
   function showCurrent(){
-    // ✅ مهم: أول ما ندخل manual نضمن إنه مفيش تايمر خالص
-    if(idx >= manualStartIndex) clearTimer();
+    // بعد العد التنازلي: ممنوع أوتو نهائيًا
+    if(idx >= manualStartIndex) killTimer();
 
     render(scenes[idx]);
 
-    // Auto only before manual
     if(idx < manualStartIndex){
-      clearTimer();
-      timer = setTimeout(() => {
-        idx++;
-        if(idx >= scenes.length) idx = 0;
-        showCurrent();
-      }, scenes[idx].ms);
+      scheduleAuto(scenes[idx].ms);
     }
   }
 
   function next(){
-    clearTimer(); // ✅ يلغي أي قلب تلقائي قبل ما ننقل
+    killTimer(); // يمنع أي قلب تلقائي
     idx++;
-    if(idx >= scenes.length){
-      idx = 0; // replay تلقائي بعد النهاية
-    }
+    if(idx >= scenes.length) idx = 0; // replay تلقائي
     showCurrent();
   }
 
   function start(){
-    clearTimer();
+    killTimer();
     idx = 0;
     stage.innerHTML = "";
     showCurrent();
   }
 
-  // ✅ استخدم pointerup بدل pointerdown (أهدى على الموبايل)
-  // + preventDefault عشان ما يحصلش click إضافي
-  function onTap(e){
+  // ======= IMPORTANT: ONE event ONLY (touchstart) =======
+  // نوقف click/pointer تمامًا
+  function stopAll(e){
     e.preventDefault();
+    e.stopPropagation();
+  }
+  window.addEventListener("click", stopAll, { capture:true, passive:false });
+  window.addEventListener("pointerdown", stopAll, { capture:true, passive:false });
+  window.addEventListener("pointerup", stopAll, { capture:true, passive:false });
 
-    if(tapLocked) return;
-    tapLocked = true;
-    setTimeout(()=> tapLocked = false, TAP_COOLDOWN_MS);
+  // الحدث الوحيد اللي هنستخدمه:
+  window.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const now = performance.now();
+    if(tapLock) return;
+    if(now - lastTapAt < TAP_GUARD_MS) return;
+    lastTapAt = now;
+    lockTap();
 
     next();
-  }
+  }, { capture:true, passive:false });
 
-  // passive:false عشان preventDefault يشتغل
-  window.addEventListener("pointerup", onTap, { passive:false });
-
-  // start
   start();
 })();
 </script>
