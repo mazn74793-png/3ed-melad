@@ -111,16 +111,15 @@
 <script>
 (() => {
   const stage = document.getElementById("stage");
-  const hint = document.getElementById("hint");
+  const hint  = document.getElementById("hint");
 
   const NAME = "MAZEN";
 
-  // Scenes:
-  // - Auto: intro + countdown + silence
-  // - Manual: everything after silence (tap to advance)
+  // Auto: intro + countdown + silence
+  // Manual: everything after silence
   const scenes = [
-    { type:"text",    ms:1400, top:"PRIVATE LINK", big:"WAIT.", mid:"Don’t blink." },
-    { type:"text",    ms:1800, top:"NOT A NORMAL BIRTHDAY", big:"THIS IS NOT A NORMAL BIRTHDAY.", mid:"Keep watching." },
+    { type:"text",    ms:1600, top:"PRIVATE LINK", big:"WAIT.", mid:"Don’t blink." },
+    { type:"text",    ms:1900, top:"NOT A NORMAL BIRTHDAY", big:"THIS IS NOT A NORMAL BIRTHDAY.", mid:"Keep watching." },
 
     { type:"count",   ms:1200, value:"3" },
     { type:"count",   ms:1200, value:"2" },
@@ -129,30 +128,41 @@
     { type:"silence", ms:900 },
 
     // Manual from here:
-    { type:"text",    top:"TODAY",    big:`${NAME}`, mid:"TURNS 17." },
-    { type:"text",    top:"LEVEL UP", big:"NO NOISE.", mid:"NO FILTERS." },
-    { type:"text",    top:"JUST",     big:"POWER.", mid:"Built different." },
-    { type:"text",    top:"THIS YEAR",big:"BIGGER MOVES.", mid:"Higher goals." },
-    { type:"text",    top:"MODE",     big:"NO LIMITS.", mid:"No excuses." },
-    { type:"text",    top:"FINAL",    big:"THE STORY STARTS NOW.", mid:"Happy 17th Birthday." },
+    { type:"text",    top:"TODAY",     big:`${NAME}`, mid:"TURNS 17." },
+    { type:"text",    top:"LEVEL UP",  big:"NO NOISE.", mid:"NO FILTERS." },
+    { type:"text",    top:"JUST",      big:"POWER.", mid:"Built different." },
+    { type:"text",    top:"THIS YEAR", big:"BIGGER MOVES.", mid:"Higher goals." },
+    { type:"text",    top:"MODE",      big:"NO LIMITS.", mid:"No excuses." },
+    { type:"text",    top:"FINAL",     big:"THE STORY STARTS NOW.", mid:"Happy 17th Birthday." },
   ];
 
-  // index where manual starts
   const manualStartIndex = scenes.findIndex(s => s.type === "silence") + 1;
 
-  let timer = null;
   let idx = 0;
+  let timer = null;
+
+  // ✅ يمنع الضغط يعمل Next مرتين/تلاتة
+  let tapLocked = false;
+  const TAP_COOLDOWN_MS = 320;
+
+  function clearTimer(){
+    if(timer){
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
 
   function clearStage(animOut=false){
     if(!stage.firstChild) return;
     if(animOut){
       stage.firstChild.classList.add("fadeOut");
-      setTimeout(()=>{ stage.innerHTML=""; }, 260);
+      setTimeout(()=>{ stage.innerHTML=""; }, 240);
     } else stage.innerHTML="";
   }
 
   function render(scene){
     clearStage(true);
+
     const wrap = document.createElement("div");
     wrap.className = "fadeInUp";
 
@@ -179,60 +189,61 @@
         <div class="sub">tap for next</div>
       `;
     }
+
     stage.appendChild(wrap);
 
-    // Update hint depending on mode
-    if(idx >= manualStartIndex) hint.textContent = "tap for next ▸";
-    else hint.textContent = "tap to skip ▸";
-  }
-
-  function scheduleAutoAdvance(ms){
-    if(timer){ clearTimeout(timer); timer=null; }
-    timer = setTimeout(() => {
-      idx++;
-      if(idx >= scenes.length){
-        // لو خلصت في الآخر: Replay تلقائي
-        idx = 0;
-      }
-      showCurrent();
-    }, ms);
+    hint.textContent = (idx >= manualStartIndex) ? "tap for next ▸" : "tap to skip ▸";
   }
 
   function showCurrent(){
-    const scene = scenes[idx];
-    render(scene);
+    // ✅ مهم: أول ما ندخل manual نضمن إنه مفيش تايمر خالص
+    if(idx >= manualStartIndex) clearTimer();
 
-    // Auto only before manualStartIndex
+    render(scenes[idx]);
+
+    // Auto only before manual
     if(idx < manualStartIndex){
-      scheduleAutoAdvance(scene.ms);
-    } else {
-      // Manual: no timer
-      if(timer){ clearTimeout(timer); timer=null; }
+      clearTimer();
+      timer = setTimeout(() => {
+        idx++;
+        if(idx >= scenes.length) idx = 0;
+        showCurrent();
+      }, scenes[idx].ms);
     }
   }
 
+  function next(){
+    clearTimer(); // ✅ يلغي أي قلب تلقائي قبل ما ننقل
+    idx++;
+    if(idx >= scenes.length){
+      idx = 0; // replay تلقائي بعد النهاية
+    }
+    showCurrent();
+  }
+
   function start(){
-    if(timer){ clearTimeout(timer); timer=null; }
+    clearTimer();
     idx = 0;
     stage.innerHTML = "";
     showCurrent();
   }
 
-  function nextManualOrSkip(){
-    // tap always advances to next scene
-    if(timer){ clearTimeout(timer); timer=null; }
-    idx++;
-    if(idx >= scenes.length){
-      idx = 0; // replay automatically
-    }
-    showCurrent();
+  // ✅ استخدم pointerup بدل pointerdown (أهدى على الموبايل)
+  // + preventDefault عشان ما يحصلش click إضافي
+  function onTap(e){
+    e.preventDefault();
+
+    if(tapLocked) return;
+    tapLocked = true;
+    setTimeout(()=> tapLocked = false, TAP_COOLDOWN_MS);
+
+    next();
   }
 
-  // Tap anywhere:
-  // - during auto section: acts as skip (next)
-  // - during manual section: acts as next (exactly what you want)
-  addEventListener("pointerdown", nextManualOrSkip);
+  // passive:false عشان preventDefault يشتغل
+  window.addEventListener("pointerup", onTap, { passive:false });
 
+  // start
   start();
 })();
 </script>
