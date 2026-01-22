@@ -6,147 +6,96 @@
   <title>Birthday Surprise</title>
   <style>
     :root{
-      --bg: #070812;
-      --fg: #e9eefc;
-      --muted: rgba(233,238,252,.72);
-      --dim: rgba(233,238,252,.18);
-      --accent: #7c8cff; /* لمسة لون واحدة هادية */
+      --bg:#070812;
+      --fg:#e9eefc;
+      --muted:rgba(233,238,252,.72);
+      --dim:rgba(233,238,252,.18);
+      --accent:#7c8cff;
     }
+    html,body{height:100%;margin:0;background:var(--bg);overflow:hidden}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 
-    html,body{height:100%; margin:0; background:var(--bg); overflow:hidden;}
-    body{font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
-
-    /* خلفية ناعمة (بدون فلاش) */
     .bg{
-      position:fixed; inset:0;
+      position:fixed;inset:0;
       background:
         radial-gradient(1200px 900px at 20% 20%, rgba(124,140,255,.14), transparent 60%),
         radial-gradient(1000px 700px at 80% 70%, rgba(124,140,255,.10), transparent 60%),
         linear-gradient(180deg, rgba(255,255,255,.03), transparent 20%, transparent 80%, rgba(255,255,255,.02));
-      filter: saturate(1.05);
+      filter:saturate(1.05);
     }
-    /* Grain خفيف جدًا عشان الإحساس السينمائي */
     .grain{
-      position:fixed; inset:-20%;
+      position:fixed;inset:-20%;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.08'/%3E%3C/svg%3E");
-      opacity:.16;
-      mix-blend-mode: overlay;
-      animation: drift 10s linear infinite;
+      opacity:.16; mix-blend-mode:overlay;
+      animation:drift 10s linear infinite;
       pointer-events:none;
     }
-    @keyframes drift{to{transform:translate3d(-6%, -4%, 0)}}
+    @keyframes drift{to{transform:translate3d(-6%,-4%,0)}}
 
-    .wrap{
-      position:fixed; inset:0;
-      display:flex; align-items:center; justify-content:center;
-      padding:24px;
-    }
-
-    .card{
-      width:min(920px, 92vw);
-      text-align:center;
-    }
+    .wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{width:min(920px,92vw);text-align:center}
 
     .topline{
-      display:flex; align-items:center; justify-content:center; gap:10px;
-      color:var(--muted);
-      letter-spacing:.32em;
-      text-transform:uppercase;
-      font-size:12px;
-      margin-bottom:18px;
-      opacity:.95;
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      color:var(--muted);letter-spacing:.32em;text-transform:uppercase;
+      font-size:12px;margin-bottom:18px;opacity:.95;
     }
-    .dot{width:5px; height:5px; border-radius:50%; background:var(--accent); box-shadow:0 0 18px rgba(124,140,255,.7);}
-
+    .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px rgba(124,140,255,.7)}
     .big{
-      color:var(--fg);
-      font-weight:900;
-      letter-spacing:-0.04em;
-      line-height:1.02;
-      font-size: clamp(34px, 6vw, 72px);
-      margin: 0;
-      text-shadow: 0 10px 40px rgba(0,0,0,.55);
+      color:var(--fg);font-weight:900;letter-spacing:-0.04em;line-height:1.02;
+      font-size:clamp(34px,6vw,72px);margin:0;
+      text-shadow:0 10px 40px rgba(0,0,0,.55);
     }
-
     .mid{
-      color:var(--muted);
-      font-weight:700;
-      letter-spacing:-0.02em;
-      font-size: clamp(16px, 2.6vw, 22px);
-      margin: 14px 0 0;
+      color:var(--muted);font-weight:700;letter-spacing:-0.02em;
+      font-size:clamp(16px,2.6vw,22px);margin:14px 0 0;
     }
-
     .sub{
-      margin-top:18px;
-      color: var(--dim);
-      font-size:14px;
-      letter-spacing:.08em;
-      text-transform:uppercase;
+      margin-top:18px;color:var(--dim);font-size:14px;
+      letter-spacing:.08em;text-transform:uppercase;
     }
-
-    /* Countdown style */
     .count{
-      font-variant-numeric: tabular-nums;
+      font-variant-numeric:tabular-nums;
       letter-spacing:-0.02em;
-      font-size: clamp(72px, 14vw, 160px);
-      font-weight:950;
-      color:var(--fg);
-      text-shadow: 0 18px 60px rgba(124,140,255,.18), 0 10px 40px rgba(0,0,0,.6);
+      font-size:clamp(72px,14vw,160px);
+      font-weight:950;color:var(--fg);
+      text-shadow:0 18px 60px rgba(124,140,255,.18), 0 10px 40px rgba(0,0,0,.6);
     }
 
-    /* Animations (هادية) */
-    .fadeInUp{
-      animation: fadeInUp .65s cubic-bezier(.2,.8,.2,1) both;
-    }
+    .fadeInUp{animation:fadeInUp .65s cubic-bezier(.2,.8,.2,1) both}
     @keyframes fadeInUp{
-      from{opacity:0; transform:translate3d(0,14px,0) scale(.985)}
-      to{opacity:1; transform:translate3d(0,0,0) scale(1)}
+      from{opacity:0;transform:translate3d(0,14px,0) scale(.985)}
+      to{opacity:1;transform:translate3d(0,0,0) scale(1)}
     }
+    .fadeOut{animation:fadeOut .45s ease both}
+    @keyframes fadeOut{to{opacity:0;transform:translate3d(0,-10px,0) scale(.99)}}
 
-    .fadeOut{
-      animation: fadeOut .45s ease both;
-    }
-    @keyframes fadeOut{to{opacity:0; transform:translate3d(0,-10px,0) scale(.99)}}
-
-    .pulseAccent{
-      display:inline-block;
-      position:relative;
-    }
+    .pulseAccent{display:inline-block;position:relative}
     .pulseAccent::after{
-      content:"";
-      position:absolute; left:50%; top:50%;
-      width:10px; height:10px; border-radius:999px;
+      content:"";position:absolute;left:50%;top:50%;
+      width:10px;height:10px;border-radius:999px;
       transform:translate(-50%,-50%);
       background:rgba(124,140,255,.55);
-      filter: blur(8px);
-      opacity:.7;
-      animation: pulse 1.6s ease-in-out infinite;
+      filter:blur(8px);opacity:.7;
+      animation:pulse 1.6s ease-in-out infinite;
     }
     @keyframes pulse{
-      0%,100%{transform:translate(-50%,-50%) scale(1); opacity:.45}
-      50%{transform:translate(-50%,-50%) scale(1.55); opacity:.75}
+      0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.45}
+      50%{transform:translate(-50%,-50%) scale(1.55);opacity:.75}
     }
 
-    .ui{
-      position:fixed; left:50%; bottom:16px; transform:translateX(-50%);
-      display:flex; gap:10px; align-items:center;
-      padding:10px 12px; border-radius:999px;
-      background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.10);
-      color:var(--muted); font-size:14px;
-      backdrop-filter: blur(10px);
+    /* مساعده صغيرة مش مزعجة */
+    .hint{
+      position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+      padding:10px 12px;border-radius:999px;
+      background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.08);
+      color:var(--dim);font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+      backdrop-filter:blur(10px);
       user-select:none;
     }
-    .btn{
-      cursor:pointer; padding:8px 12px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.06);
-      color:var(--fg);
-    }
-    .btn:active{transform:scale(.98)}
 
-    /* Reduced motion احترامًا للناس اللي بتحس بدوخة */
     @media (prefers-reduced-motion: reduce){
-      .grain, .fadeInUp, .fadeOut, .pulseAccent::after{animation:none !important}
+      .grain,.fadeInUp,.fadeOut,.pulseAccent::after{animation:none !important}
     }
   </style>
 </head>
@@ -158,47 +107,45 @@
     <div class="card" id="stage"></div>
   </div>
 
-  <div class="ui">
-    <button class="btn" id="replay">Replay ✨</button>
-    <span>Tap anywhere to continue ▸</span>
-  </div>
+  <!-- مفيش زرار Replay ظاهر -->
+  <div class="hint">tap anywhere to skip ▸</div>
 
 <script>
 (() => {
   const stage = document.getElementById("stage");
-  const replayBtn = document.getElementById("replay");
 
-  // ✅ عدّل الاسم هنا لو حبيت
+  // ✅ الاسم
   const NAME = "MAZEN";
 
-  // Timeline: (#1) Cinematic text + (#5) Countdown + (#3) Silence → Drop
-  // كل مشهد: type + مدة + نصوص
+  // ✅ شرطك: بعد العد التنازلي، كل مشهد 5 ثواني على الأقل
+  const MIN_READ_MS_AFTER_COUNTDOWN = 5000;
+
+  // ✅ Scenes (نحدد للعد التنازلي والسكون أزمنة خاصة)
   const scenes = [
-    { type:"text", ms:1200, top:"PRIVATE LINK", big:"WAIT.", mid:"Don’t blink." },
+    { type:"text",    ms:1400, top:"PRIVATE LINK", big:"WAIT.", mid:"Don’t blink." },
+    { type:"text",    ms:1800, top:"NOT A NORMAL BIRTHDAY", big:"THIS IS NOT A NORMAL BIRTHDAY.", mid:"Keep watching." },
 
-    { type:"text", ms:1600, top:"NOT A NORMAL BIRTHDAY", big:"THIS IS NOT A NORMAL BIRTHDAY.", mid:"Keep watching." },
+    { type:"count",   ms:1200, value:"3" },
+    { type:"count",   ms:1200, value:"2" },
+    { type:"count",   ms:1200, value:"1" },
 
-    { type:"count", ms:850,  value:"3" },
-    { type:"count", ms:850,  value:"2" },
-    { type:"count", ms:850,  value:"1" },
+    { type:"silence", ms:900 },
 
-    // Silence (سكون) — مفاجأة نفسية (#3)
-    { type:"silence", ms:650 },
-
-    // Drop
-    { type:"text", ms:1700, top:"TODAY", big:`${NAME}`, mid:"TURNS 17." },
-
-    { type:"text", ms:1500, top:"LEVEL UP", big:"NO NOISE.", mid:"NO FILTERS." },
-    { type:"text", ms:1600, top:"JUST", big:"POWER.", mid:"Built different." },
-
-    { type:"text", ms:1700, top:"THIS YEAR", big:"BIGGER MOVES.", mid:"Higher goals." },
-    { type:"text", ms:1600, top:"MODE", big:"NO LIMITS.", mid:"No excuses." },
-
-    { type:"text", ms:2400, top:"FINAL", big:"THE STORY STARTS NOW.", mid:"Happy 17th Birthday." },
+    // بعد هنا: هنفرض 5 ثواني كحد أدنى (حتى لو ms أقل)
+    { type:"text",    ms:1700, top:"TODAY",   big:`${NAME}`, mid:"TURNS 17." },
+    { type:"text",    ms:1600, top:"LEVEL UP",big:"NO NOISE.", mid:"NO FILTERS." },
+    { type:"text",    ms:1700, top:"JUST",    big:"POWER.", mid:"Built different." },
+    { type:"text",    ms:1800, top:"THIS YEAR", big:"BIGGER MOVES.", mid:"Higher goals." },
+    { type:"text",    ms:1700, top:"MODE",    big:"NO LIMITS.", mid:"No excuses." },
+    { type:"text",    ms:2400, top:"FINAL",   big:"THE STORY STARTS NOW.", mid:"Happy 17th Birthday." },
   ];
 
   let timer = null;
   let idx = 0;
+
+  // هنحدد نقطة "نهاية العد التنازلي" عشان بعدها نفعل 5 ثواني
+  const countdownEndIndex = scenes.findIndex(s => s.type === "silence"); // أول سكون بعد 1
+  const afterCountdownStartsAt = countdownEndIndex + 1;
 
   function clearStage(animOut=false){
     if(!stage.firstChild) return;
@@ -215,16 +162,13 @@
     wrap.className = "fadeInUp";
 
     if(scene.type === "silence"){
-      // سكون مقصود: نخلي الشاشة فاضية + نقطة Accent تتنفس
       wrap.innerHTML = `
         <div class="topline">
           <span class="pulseAccent"><span class="dot"></span></span>
         </div>
         <div class="sub">...</div>
       `;
-    }
-
-    if(scene.type === "count"){
+    } else if(scene.type === "count"){
       wrap.innerHTML = `
         <div class="topline">
           <span class="dot"></span><span>COUNTDOWN</span><span class="dot"></span>
@@ -232,9 +176,7 @@
         <div class="count">${scene.value}</div>
         <div class="sub">get ready</div>
       `;
-    }
-
-    if(scene.type === "text"){
+    } else {
       wrap.innerHTML = `
         <div class="topline"><span class="dot"></span><span>${scene.top}</span><span class="dot"></span></div>
         <h1 class="big">${scene.big}</h1>
@@ -246,8 +188,17 @@
     stage.appendChild(wrap);
   }
 
+  function effectiveDuration(i){
+    const s = scenes[i];
+    // بعد العد التنازلي: الحد الأدنى 5 ثواني للمشاهد النصية
+    if(i >= afterCountdownStartsAt && s.type === "text"){
+      return Math.max(s.ms, MIN_READ_MS_AFTER_COUNTDOWN);
+    }
+    return s.ms;
+  }
+
   function next(){
-    if(timer) { clearTimeout(timer); timer=null; }
+    if(timer){ clearTimeout(timer); timer=null; }
 
     const scene = scenes[idx];
     render(scene);
@@ -255,24 +206,22 @@
     timer = setTimeout(() => {
       idx++;
       if(idx >= scenes.length){
-        // loop by default
+        // ✅ يعمل Replay تلقائي لما يخلص
         idx = 0;
       }
       next();
-    }, scene.ms);
+    }, effectiveDuration(idx));
   }
 
   function start(){
-    if(timer) { clearTimeout(timer); timer=null; }
+    if(timer){ clearTimeout(timer); timer=null; }
     idx = 0;
     stage.innerHTML = "";
     next();
   }
 
-  // Controls
-  replayBtn.addEventListener("click", start);
-  addEventListener("pointerdown", (e)=>{
-    // tap = skip to next scene (أنت طلبت مفاجأة سريعة)
+  // ✅ Tap = Skip لأي مشهد
+  addEventListener("pointerdown", ()=>{
     idx = (idx + 1) % scenes.length;
     next();
   });
